@@ -7,7 +7,7 @@ import yfinance as yf
 import logging
 
 # Set up logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
@@ -24,7 +24,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=False,  # Set to False since we're using specific origins
+    allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
     max_age=3600,
@@ -61,23 +61,13 @@ class StockDataRequest(BaseModel):
             raise ValueError('Incorrect date format, should be YYYY-MM-DD')
         return value
 
-@app.options("/fetch-stock-data")
-async def options_handler(request: Request):
-    origin = request.headers.get("origin", origins[0])
-    return JSONResponse(
-        content={"message": "OK"},
-        headers={
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "3600",
-        }
-    )
+@app.get("/api/health")
+async def health_check():
+    return {"status": "healthy"}
 
-@app.post("/fetch-stock-data")
-async def fetch_stock_data(request: StockDataRequest, req: Request):
+@app.post("/api/fetch-stock-data")
+async def fetch_stock_data(request: StockDataRequest):
     try:
-        logger.debug(f"Received request: {request}")
         logger.info(f"Fetching stock data for {request.ticker} from {request.startDate} to {request.endDate}")
         
         # Convert timeframe to yfinance interval
@@ -103,28 +93,17 @@ async def fetch_stock_data(request: StockDataRequest, req: Request):
         # Convert DataFrame to list of dictionaries
         data = []
         for index, row in df.iterrows():
-            try:
-                data_point = {
-                    "Date": index.strftime("%Y-%m-%d"),
-                    "Close": float(row["Close"]),
-                    "Open": float(row["Open"]),
-                    "High": float(row["High"]),
-                    "Low": float(row["Low"])
-                }
-                data.append(data_point)
-            except Exception as e:
-                logger.error(f"Error processing row {index}: {str(e)}")
-                continue
+            data_point = {
+                "Date": index.strftime("%Y-%m-%d"),
+                "Close": float(row["Close"]),
+                "Open": float(row["Open"]),
+                "High": float(row["High"]),
+                "Low": float(row["Low"])
+            }
+            data.append(data_point)
         
         logger.info(f"Successfully fetched {len(data)} data points")
-        return JSONResponse(
-            content=data,
-            headers={
-                "Access-Control-Allow-Origin": req.headers.get("origin", origins[0]),
-                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                "Access-Control-Allow-Headers": "*",
-            }
-        )
+        return data
         
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")
