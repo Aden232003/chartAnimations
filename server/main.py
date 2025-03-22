@@ -11,13 +11,18 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Enable CORS
+# Enable CORS with specific configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Update this with your Vercel domain in production
+    allow_origins=[
+        "https://chart-animations.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:5174"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 class StockDataRequest(BaseModel):
