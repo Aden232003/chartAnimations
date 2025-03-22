@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, validator
 from datetime import datetime
 import yfinance as yf
 import logging
-from mangum import Adapter
+import json
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -67,7 +68,7 @@ async def fetch_stock_data(request: StockDataRequest):
         
         if df.empty:
             logger.warning(f"No data found for {request.ticker}")
-            return []
+            return JSONResponse(content=[], status_code=200)
             
         # Convert DataFrame to list of dictionaries
         data = []
@@ -82,15 +83,48 @@ async def fetch_stock_data(request: StockDataRequest):
             data.append(data_point)
         
         logger.info(f"Successfully fetched {len(data)} data points")
-        return data
+        return JSONResponse(content=data, status_code=200)
         
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(
+            content={"error": str(e)},
+            status_code=500
+        )
 
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy"}
 
-# Create Mangum handler for AWS Lambda/Vercel
-handler = Adapter(app) 
+# For Vercel serverless functions
+async def handler(request: Request):
+    if request.method == "OPTIONS":
+        return JSONResponse(
+            content={},
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "*"
+            }
+        )
+    
+    try:
+        body = await request.json()
+        path = request.url.path
+        
+        if path == "/api/fetch-stock-data":
+            stock_request = StockDataRequest(**body)
+            return await fetch_stock_data(stock_request)
+        elif path == "/api/health":
+            return await health_check()
+        else:
+            return JSONResponse(
+                content={"error": "Not found"},
+                status_code=404
+            )
+    except Exception as e:
+        logger.error(f"Handler error: {str(e)}")
+        return JSONResponse(
+            content={"error": str(e)},
+            status_code=500
+        ) 
