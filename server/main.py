@@ -6,24 +6,32 @@ import yfinance as yf
 import logging
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
 # Enable CORS with specific configuration
+origins = [
+    "https://chart-animations.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://chartanimations-production.up.railway.app"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://chart-animations.vercel.app",
-        "http://localhost:5173",
-        "http://localhost:5174"
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    max_age=3600,
 )
+
+@app.options("/fetch-stock-data")
+async def options_stock_data():
+    # Handle OPTIONS preflight request
+    return {}
 
 class StockDataRequest(BaseModel):
     ticker: str
@@ -34,6 +42,7 @@ class StockDataRequest(BaseModel):
 @app.post("/fetch-stock-data")
 async def fetch_stock_data(request: StockDataRequest):
     try:
+        logger.debug(f"Received request headers: {request}")
         logger.info(f"Fetching stock data for {request.ticker} from {request.startDate} to {request.endDate}")
         
         # Convert timeframe to yfinance interval
