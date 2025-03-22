@@ -20,7 +20,10 @@ const StockDataFetcher: React.FC<StockDataFetcherProps> = ({ onDataFetch }) => {
     setError(null);
 
     try {
-      const response = await fetch('/api/fetch-stock-data', {
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const url = baseUrl ? `${baseUrl}/api/fetch-stock-data` : '/api/fetch-stock-data';
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -28,11 +31,12 @@ const StockDataFetcher: React.FC<StockDataFetcherProps> = ({ onDataFetch }) => {
         body: JSON.stringify({ ticker, startDate, endDate, timeframe }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.detail || 'Failed to fetch stock data');
+        const errorData = await response.text();
+        throw new Error(errorData || 'Failed to fetch stock data');
       }
+
+      const data = await response.json();
 
       if (!Array.isArray(data)) {
         throw new Error('Invalid data format received from server');
