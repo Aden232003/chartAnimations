@@ -4,6 +4,7 @@ from pydantic import BaseModel, validator
 from datetime import datetime
 import yfinance as yf
 import logging
+import os
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -89,4 +90,9 @@ async def fetch_stock_data(request: StockDataRequest):
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy"} 
+    return {"status": "healthy"}
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True) 
