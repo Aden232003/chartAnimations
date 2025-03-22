@@ -14,21 +14,38 @@ app = FastAPI()
 
 # Define allowed origins
 origins = [
-    "https://chart-animations.vercel.app",  # Production frontend
-    "http://localhost:5173",  # Local development
+    "https://chart-animations.vercel.app",
+    "http://localhost:5173",
     "http://localhost:5174",
-    "http://localhost:5175",
+    "http://localhost:5175"
 ]
 
-# Configure CORS - this must be added before any routes
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Temporarily allow all origins for testing
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=origins,
+    allow_credentials=False,  # Set to False since we're using specific origins
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    max_age=3600,
 )
+
+# Add middleware to log all requests
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    logger.info(f"Request headers: {request.headers}")
+    
+    response = await call_next(request)
+    
+    # Add CORS headers to all responses
+    response.headers["Access-Control-Allow-Origin"] = request.headers.get("origin", origins[0])
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    
+    logger.info(f"Response status: {response.status_code}")
+    logger.info(f"Response headers: {response.headers}")
+    return response
 
 class StockDataRequest(BaseModel):
     ticker: str
@@ -44,33 +61,21 @@ class StockDataRequest(BaseModel):
             raise ValueError('Incorrect date format, should be YYYY-MM-DD')
         return value
 
-# Add middleware to log all requests and responses
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger.info(f"Incoming request: {request.method} {request.url}")
-    logger.info(f"Request headers: {request.headers}")
-    
-    response = await call_next(request)
-    
-    logger.info(f"Response status: {response.status_code}")
-    return response
-
-# Add OPTIONS route handler for debugging
 @app.options("/fetch-stock-data")
-async def options_handler():
+async def options_handler(request: Request):
+    origin = request.headers.get("origin", origins[0])
     return JSONResponse(
         content={"message": "OK"},
         headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
             "Access-Control-Allow-Headers": "*",
             "Access-Control-Max-Age": "3600",
-        },
-        status_code=200
+        }
     )
 
 @app.post("/fetch-stock-data")
-async def fetch_stock_data(request: StockDataRequest):
+async def fetch_stock_data(request: StockDataRequest, req: Request):
     try:
         logger.debug(f"Received request: {request}")
         logger.info(f"Fetching stock data for {request.ticker} from {request.startDate} to {request.endDate}")
@@ -112,7 +117,14 @@ async def fetch_stock_data(request: StockDataRequest):
                 continue
         
         logger.info(f"Successfully fetched {len(data)} data points")
-        return data
+        return JSONResponse(
+            content=data,
+            headers={
+                "Access-Control-Allow-Origin": req.headers.get("origin", origins[0]),
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+            }
+        )
         
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")

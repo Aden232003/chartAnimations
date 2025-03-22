@@ -31,11 +31,10 @@ const StockDataFetcher: React.FC<StockDataFetcherProps> = ({ onDataFetch }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Origin': window.location.origin
+          'Accept': 'application/json'
         },
         mode: 'cors',
-        credentials: 'same-origin',
+        credentials: 'omit',
         body: JSON.stringify({
           ticker,
           startDate,
@@ -45,8 +44,15 @@ const StockDataFetcher: React.FC<StockDataFetcherProps> = ({ onDataFetch }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch data' }));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.detail || `HTTP error! status: ${response.status}`;
+        } catch {
+          errorMessage = `HTTP error! status: ${response.status}, message: ${errorText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
