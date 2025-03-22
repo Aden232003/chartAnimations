@@ -30,9 +30,12 @@ const StockDataFetcher: React.FC<StockDataFetcherProps> = ({ onDataFetch }) => {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': window.location.origin
         },
         mode: 'cors',
+        credentials: 'same-origin',
         body: JSON.stringify({
           ticker,
           startDate,
@@ -42,14 +45,14 @@ const StockDataFetcher: React.FC<StockDataFetcherProps> = ({ onDataFetch }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to fetch data');
+        const errorData = await response.json().catch(() => ({ detail: 'Failed to fetch data' }));
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
 
       if (!Array.isArray(data)) {
-        throw new Error('Invalid data format received from server');
+        throw new Error('Invalid data format received');
       }
 
       // Transform the data to ensure it matches ChartData interface
