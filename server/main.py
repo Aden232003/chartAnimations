@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
 import yfinance as yf
 import logging
+from fastapi.responses import JSONResponse
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Enable CORS with specific configuration
+# CORS configuration
 origins = [
     "https://chart-animations.vercel.app",
     "http://localhost:5173",
@@ -19,19 +20,28 @@ origins = [
     "https://chartanimations-production.up.railway.app"
 ]
 
+# Add CORS middleware first, before any routes
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
     max_age=3600,
 )
 
-@app.options("/fetch-stock-data")
-async def options_stock_data():
-    # Handle OPTIONS preflight request
-    return {}
+@app.options("/{path:path}")
+async def options_route(request: Request):
+    """Handle all OPTIONS requests."""
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "https://chart-animations.vercel.app",
+            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+        }
+    )
 
 class StockDataRequest(BaseModel):
     ticker: str
@@ -42,7 +52,7 @@ class StockDataRequest(BaseModel):
 @app.post("/fetch-stock-data")
 async def fetch_stock_data(request: StockDataRequest):
     try:
-        logger.debug(f"Received request headers: {request}")
+        logger.debug(f"Received request: {request}")
         logger.info(f"Fetching stock data for {request.ticker} from {request.startDate} to {request.endDate}")
         
         # Convert timeframe to yfinance interval
@@ -82,7 +92,14 @@ async def fetch_stock_data(request: StockDataRequest):
                 continue
         
         logger.info(f"Successfully fetched {len(data)} data points")
-        return data
+        return JSONResponse(
+            content=data,
+            headers={
+                "Access-Control-Allow-Origin": "https://chart-animations.vercel.app",
+                "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type",
+            }
+        )
         
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")
