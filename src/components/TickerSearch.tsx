@@ -75,24 +75,157 @@ const allTickers: TickerInfo[] = [
 ];
 
 interface TickerSearchProps {
-  value: string;
-  onChange: (value: string) => void;
+  onSelect: (ticker: string) => void;
+  initialValue?: string;
 }
 
-const TickerSearch: React.FC<TickerSearchProps> = ({ value, onChange }) => {
+const TickerSearch: React.FC<TickerSearchProps> = ({ onSelect, initialValue = '' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState(initialValue);
+  const [filteredTickers, setFilteredTickers] = useState<TickerInfo[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    let tickersToFilter = allTickers;
+    if (selectedCategory !== 'all') {
+      tickersToFilter = allTickers.filter(ticker => ticker.exchange === selectedCategory);
+    }
+
+    const filtered = tickersToFilter.filter(ticker => 
+      ticker.symbol.toLowerCase().includes(search.toLowerCase()) ||
+      ticker.name.toLowerCase().includes(search.toLowerCase())
+    );
+    setFilteredTickers(filtered);
+  }, [search, selectedCategory]);
+
+  const handleSelect = (ticker: TickerInfo) => {
+    setSearch(ticker.symbol);
+    onSelect(ticker.symbol);
+    setIsOpen(false);
+  };
+
   return (
-    <div>
-      <label htmlFor="ticker" className="block text-sm font-medium text-gray-700">
-        Stock Ticker
-      </label>
-      <input
-        type="text"
-        id="ticker"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter stock ticker (e.g., AAPL, BTC-USD)"
-        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-      />
+    <div ref={wrapperRef} className="relative w-full">
+      <div className="relative">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          placeholder="Search by company name or ticker symbol..."
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+        >
+          ▼
+        </button>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+          <div className="sticky top-0 bg-white border-b border-gray-200 p-2 flex space-x-2 overflow-x-auto">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-3 py-1 rounded-full text-sm ${
+                selectedCategory === 'all'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setSelectedCategory('INDEX')}
+              className={`px-3 py-1 rounded-full text-sm ${
+                selectedCategory === 'INDEX'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Indices
+            </button>
+            <button
+              onClick={() => setSelectedCategory('NASDAQ')}
+              className={`px-3 py-1 rounded-full text-sm ${
+                selectedCategory === 'NASDAQ'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              NASDAQ
+            </button>
+            <button
+              onClick={() => setSelectedCategory('NYSE')}
+              className={`px-3 py-1 rounded-full text-sm ${
+                selectedCategory === 'NYSE'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              NYSE
+            </button>
+            <button
+              onClick={() => setSelectedCategory('NSE')}
+              className={`px-3 py-1 rounded-full text-sm ${
+                selectedCategory === 'NSE'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              NSE
+            </button>
+            <button
+              onClick={() => setSelectedCategory('CRYPTO')}
+              className={`px-3 py-1 rounded-full text-sm ${
+                selectedCategory === 'CRYPTO'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Crypto
+            </button>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto">
+            {filteredTickers.length > 0 ? (
+              filteredTickers.map((ticker) => (
+                <div
+                  key={ticker.symbol}
+                  onClick={() => handleSelect(ticker)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between items-center"
+                >
+                  <div>
+                    <span className="font-medium">{ticker.symbol}</span>
+                    <span className="ml-2 text-gray-600">{ticker.name}</span>
+                  </div>
+                  <span className="text-xs text-gray-400">{ticker.exchange}</span>
+                </div>
+              ))
+            ) : (
+              <div className="px-4 py-2 text-gray-500 text-center">
+                No matching instruments found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
