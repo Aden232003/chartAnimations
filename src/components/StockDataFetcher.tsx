@@ -21,7 +21,7 @@ const StockDataFetcher: React.FC<StockDataFetcherProps> = ({ onDataFetch }) => {
 
     try {
       const baseUrl = import.meta.env.VITE_API_URL || '';
-      const url = baseUrl ? `${baseUrl}/api/fetch-stock-data` : '/api/fetch-stock-data';
+      const url = baseUrl ? `${baseUrl}/fetch-stock-data` : '/api/fetch-stock-data';
       
       const response = await fetch(url, {
         method: 'POST',

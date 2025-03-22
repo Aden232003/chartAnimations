@@ -26,7 +26,7 @@ class StockDataRequest(BaseModel):
     endDate: str
     timeframe: str
 
-@app.post("/api/fetch-stock-data")
+@app.post("/fetch-stock-data")
 async def fetch_stock_data(request: StockDataRequest):
     try:
         logger.info(f"Fetching stock data for {request.ticker} from {request.startDate} to {request.endDate}")
