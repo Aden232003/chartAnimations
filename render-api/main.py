@@ -15,6 +15,8 @@ app = FastAPI()
 # Define allowed origins
 origins = [
     "https://chart-animations.vercel.app",
+    "https://chart-animations-git-main-aden232003.vercel.app",
+    "https://chart-animations-aden232003.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175"
@@ -43,6 +45,10 @@ class StockDataRequest(BaseModel):
         except ValueError:
             raise ValueError('Incorrect date format, should be YYYY-MM-DD')
         return value
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to Chart Animations API"}
 
 @app.post("/api/fetch-stock-data")
 async def fetch_stock_data(request: StockDataRequest):
