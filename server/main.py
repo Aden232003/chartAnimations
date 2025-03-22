@@ -12,15 +12,22 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# CORS configuration
+# Define allowed origins
+origins = [
+    "https://chart-animations.vercel.app",  # Production frontend
+    "http://localhost:5173",  # Local development
+    "http://localhost:5174",
+    "http://localhost:5175",
+]
+
+# Configure CORS - this must be added before any routes
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://chart-animations.vercel.app", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
     expose_headers=["*"],
-    max_age=3600,
 )
 
 # Add middleware to log all requests
@@ -37,18 +44,6 @@ class StockDataRequest(BaseModel):
     startDate: str
     endDate: str
     timeframe: str
-
-@app.options("/{path:path}")
-async def options_route(request: Request):
-    return JSONResponse(
-        content={"message": "OK"},
-        headers={
-            "Access-Control-Allow-Origin": "https://chart-animations.vercel.app",
-            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Max-Age": "3600",
-        }
-    )
 
 @app.post("/fetch-stock-data")
 async def fetch_stock_data(request: StockDataRequest):
