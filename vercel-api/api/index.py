@@ -4,6 +4,7 @@ from pydantic import BaseModel, validator
 from datetime import datetime
 import yfinance as yf
 import logging
+from mangum import Adapter
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -91,6 +92,5 @@ async def fetch_stock_data(request: StockDataRequest):
 async def health_check():
     return {"status": "healthy"}
 
-# For Vercel serverless deployment
-def handler(request):
-    return app 
+# Create Mangum handler for AWS Lambda/Vercel
+handler = Adapter(app) 
