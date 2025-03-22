@@ -1,10 +1,10 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from datetime import datetime
 import yfinance as yf
 import logging
-from fastapi.responses import JSONResponse
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -13,35 +13,13 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 # CORS configuration
-origins = [
-    "https://chart-animations.vercel.app",
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://chartanimations-production.up.railway.app"
-]
-
-# Add CORS middleware first, before any routes
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=3600,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=False,  # Must be False when allow_origins=["*"]
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
-
-@app.options("/{path:path}")
-async def options_route(request: Request):
-    """Handle all OPTIONS requests."""
-    return JSONResponse(
-        content={},
-        headers={
-            "Access-Control-Allow-Origin": "https://chart-animations.vercel.app",
-            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-        }
-    )
 
 class StockDataRequest(BaseModel):
     ticker: str
@@ -92,14 +70,7 @@ async def fetch_stock_data(request: StockDataRequest):
                 continue
         
         logger.info(f"Successfully fetched {len(data)} data points")
-        return JSONResponse(
-            content=data,
-            headers={
-                "Access-Control-Allow-Origin": "https://chart-animations.vercel.app",
-                "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type",
-            }
-        )
+        return data
         
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")

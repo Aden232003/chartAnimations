@@ -32,6 +32,7 @@ const StockDataFetcher: React.FC<StockDataFetcherProps> = ({ onDataFetch }) => {
         headers: {
           'Content-Type': 'application/json'
         },
+        mode: 'cors',
         body: JSON.stringify({
           ticker,
           startDate,
