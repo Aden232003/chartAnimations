@@ -1,6 +1,5 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, validator
 from datetime import datetime
 import yfinance as yf
@@ -14,38 +13,22 @@ app = FastAPI()
 
 # Define allowed origins
 origins = [
-    "https://chart-animations.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
-    "http://localhost:5175"
+    "http://localhost:5175",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175"
 ]
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_credentials=True,
+    allow_methods=["*"],
     allow_headers=["*"],
-    max_age=3600,
 )
-
-# Add middleware to log all requests
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger.info(f"Incoming request: {request.method} {request.url}")
-    logger.info(f"Request headers: {request.headers}")
-    
-    response = await call_next(request)
-    
-    # Add CORS headers to all responses
-    response.headers["Access-Control-Allow-Origin"] = request.headers.get("origin", origins[0])
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    
-    logger.info(f"Response status: {response.status_code}")
-    logger.info(f"Response headers: {response.headers}")
-    return response
 
 class StockDataRequest(BaseModel):
     ticker: str
@@ -60,10 +43,6 @@ class StockDataRequest(BaseModel):
         except ValueError:
             raise ValueError('Incorrect date format, should be YYYY-MM-DD')
         return value
-
-@app.get("/api/health")
-async def health_check():
-    return {"status": "healthy"}
 
 @app.post("/api/fetch-stock-data")
 async def fetch_stock_data(request: StockDataRequest):
@@ -108,6 +87,10 @@ async def fetch_stock_data(request: StockDataRequest):
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/health")
+async def health_check():
+    return {"status": "healthy"}
 
 if __name__ == "__main__":
     import uvicorn
