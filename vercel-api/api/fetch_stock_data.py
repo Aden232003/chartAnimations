@@ -89,4 +89,8 @@ async def fetch_stock_data(request: StockDataRequest):
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy"} 
+    return {"status": "healthy"}
+
+# Handler for Vercel serverless function
+def handler(request):
+    return app 
