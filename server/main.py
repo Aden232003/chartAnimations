@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 from datetime import datetime
 import yfinance as yf
 import logging
@@ -11,20 +11,10 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Define allowed origins
-origins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:5175",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    "http://127.0.0.1:5175"
-]
-
-# Configure CORS
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["http://localhost:5173", "http://localhost:5175"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,14 +25,6 @@ class StockDataRequest(BaseModel):
     startDate: str
     endDate: str
     timeframe: str
-
-    @validator('startDate', 'endDate')
-    def validate_date_format(cls, value):
-        try:
-            datetime.strptime(value, '%Y-%m-%d')
-        except ValueError:
-            raise ValueError('Incorrect date format, should be YYYY-MM-DD')
-        return value
 
 @app.post("/api/fetch-stock-data")
 async def fetch_stock_data(request: StockDataRequest):
@@ -72,14 +54,18 @@ async def fetch_stock_data(request: StockDataRequest):
         # Convert DataFrame to list of dictionaries
         data = []
         for index, row in df.iterrows():
-            data_point = {
-                "Date": index.strftime("%Y-%m-%d"),
-                "Close": float(row["Close"]),
-                "Open": float(row["Open"]),
-                "High": float(row["High"]),
-                "Low": float(row["Low"])
-            }
-            data.append(data_point)
+            try:
+                data_point = {
+                    "Date": index.strftime("%Y-%m-%d"),
+                    "Close": float(row["Close"]),
+                    "Open": float(row["Open"]),
+                    "High": float(row["High"]),
+                    "Low": float(row["Low"])
+                }
+                data.append(data_point)
+            except Exception as e:
+                logger.error(f"Error processing row {index}: {str(e)}")
+                continue
         
         logger.info(f"Successfully fetched {len(data)} data points")
         return data
@@ -87,10 +73,6 @@ async def fetch_stock_data(request: StockDataRequest):
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/health")
-async def health_check():
-    return {"status": "healthy"}
 
 if __name__ == "__main__":
     import uvicorn

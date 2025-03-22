@@ -1,0 +1,138 @@
+CHART ANIMATIONS LOCAL DEPLOYMENT GUIDE
+=====================================
+
+SIMPLE STEP-BY-STEP GUIDE
+------------------------
+1. Open Cursor and open your project folder
+   - File -> Open Folder -> Select your project folder
+
+2. Open a new terminal in Cursor
+   - View -> Terminal (or Ctrl + `)
+
+3. Clone the repository
+   git clone https://github.com/Aden232003/chartAnimations.git
+   cd chartAnimations
+
+4. Start the Backend (in the terminal)
+   cd server
+   python -m venv venv
+   .\venv\Scripts\activate
+   pip install fastapi uvicorn yfinance pandas python-dotenv httpx
+   python main.py
+   - Keep this terminal running
+
+5. Open a new terminal in Cursor
+   - View -> Terminal (or Ctrl + `)
+   - Make sure you're in the root folder (chartAnimations)
+
+6. Start the Frontend (in the new terminal)
+   npm install
+   npm run dev
+
+7. Open your browser
+   - Backend: http://localhost:8000/docs
+   - Frontend: http://localhost:5175
+
+If you see any errors, check:
+- Are you in the correct directory?
+- Is the virtual environment activated?
+- Are both servers running?
+
+QUICK START COMMANDS
+-------------------
+1. Clone & Setup:
+   git clone https://github.com/Aden232003/chartAnimations.git
+   cd chartAnimations
+
+2. Backend Setup:
+   cd server
+   python -m venv venv
+   .\venv\Scripts\activate
+   pip install fastapi uvicorn
+   pip install yfinance pandas python-dotenv httpx
+   python main.py
+
+3. Frontend Setup (in new terminal):
+   cd chartAnimations
+   npm install
+   npm run dev
+
+VIRTUAL ENVIRONMENT MANAGEMENT
+----------------------------
+1. Store the venv:
+   - After setting up the venv and installing dependencies, you can zip it:
+   cd server
+   zip -r venv.zip venv/
+
+2. Restore the venv:
+   - Unzip the stored venv:
+   cd server
+   unzip venv.zip
+   - Activate it:
+   .\venv\Scripts\activate
+
+3. Alternative: Use requirements.txt
+   - Generate requirements.txt:
+   pip freeze > requirements.txt
+   - Restore from requirements.txt:
+   pip install -r requirements.txt
+
+Note: The venv folder is typically large (100MB+). Consider using requirements.txt for version control.
+
+TROUBLESHOOTING PROMPTS
+----------------------
+If you encounter issues, use these prompts with the AI:
+
+1. Initial Setup Issues:
+   "I'm trying to set up the chart animations project locally. Here's what I've done so far: [describe steps]. Can you help me proceed?"
+
+2. Python/Backend Issues:
+   "I'm getting [error message] when trying to run the backend server. Here's my current directory: [path]"
+
+3. Frontend Issues:
+   "The frontend is running but I'm seeing ECONNREFUSED errors in the console. Can you help me fix the connection?"
+
+4. Dependencies Issues:
+   "I'm getting dependency errors when trying to install [package name]. How can I resolve this?"
+
+VERIFICATION CHECKLIST
+--------------------
+✓ Backend running on http://localhost:8000
+✓ Frontend running on http://localhost:5175 (or similar port)
+✓ No ECONNREFUSED errors in console
+✓ Can access API docs at http://localhost:8000/docs
+
+COMMON ISSUES & SOLUTIONS
+------------------------
+1. Wrong Directory:
+   - Always check you're in the right directory
+   - Backend commands must be run from /server
+   - Frontend commands must be run from root
+
+2. Python Version:
+   - Using Python 3.13
+   - Create new virtual environment if dependencies fail
+
+3. Port Issues:
+   - Backend needs port 8000
+   - Frontend will auto-find available port
+   - Check if ports are already in use
+
+4. Connection Issues:
+   - Both servers must be running
+   - Backend must start before frontend
+   - Check CORS settings if API calls fail
+
+DEPLOYMENT SEQUENCE
+------------------
+1. Clone repository
+2. Setup backend first
+3. Verify backend is running
+4. Setup frontend
+5. Verify frontend is running
+6. Test full application
+
+NEED MORE HELP?
+--------------
+Use this prompt:
+"I'm following the localdeployguide.txt instructions and I'm stuck at [step]. Here's what I'm seeing: [describe the issue]" 
