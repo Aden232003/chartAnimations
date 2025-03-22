@@ -21,7 +21,12 @@ const StockDataFetcher: React.FC<StockDataFetcherProps> = ({ onDataFetch }) => {
 
     try {
       const baseUrl = import.meta.env.VITE_API_URL || '';
-      const url = baseUrl ? `${baseUrl}/fetch-stock-data` : '/api/fetch-stock-data';
+      // Ensure the URL includes https:// for production
+      const url = baseUrl ? 
+        (baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`).concat('/fetch-stock-data') : 
+        '/api/fetch-stock-data';
+      
+      console.log('Fetching from URL:', url); // Add logging to debug
       
       const response = await fetch(url, {
         method: 'POST',
