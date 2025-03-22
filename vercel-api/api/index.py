@@ -1,3 +1,4 @@
+from http.server import BaseHTTPRequestHandler
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -45,7 +46,6 @@ class StockDataRequest(BaseModel):
             raise ValueError('Incorrect date format, should be YYYY-MM-DD')
         return value
 
-@app.post("/api/fetch-stock-data")
 async def fetch_stock_data(request: StockDataRequest):
     try:
         logger.info(f"Fetching stock data for {request.ticker} from {request.startDate} to {request.endDate}")
@@ -68,7 +68,7 @@ async def fetch_stock_data(request: StockDataRequest):
         
         if df.empty:
             logger.warning(f"No data found for {request.ticker}")
-            return JSONResponse(content=[], status_code=200)
+            return {"data": []}
             
         # Convert DataFrame to list of dictionaries
         data = []
@@ -83,14 +83,47 @@ async def fetch_stock_data(request: StockDataRequest):
             data.append(data_point)
         
         logger.info(f"Successfully fetched {len(data)} data points")
-        return JSONResponse(content=data, status_code=200)
+        return {"data": data}
         
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")
-        return JSONResponse(
-            content={"error": str(e)},
-            status_code=500
-        )
+        return {"error": str(e)}
+
+class Handler(BaseHTTPRequestHandler):
+    async def do_POST(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            request_body = self.rfile.read(content_length).decode('utf-8')
+            request_data = json.loads(request_body)
+            
+            if self.path == "/api/fetch-stock-data":
+                stock_request = StockDataRequest(**request_data)
+                response_data = await fetch_stock_data(stock_request)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps(response_data).encode('utf-8'))
+            else:
+                self.send_response(404)
+                self.end_headers()
+                
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+    
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', '*')
+        self.end_headers()
+
+def handler(request, context):
+    return Handler.do_POST(request)
 
 @app.get("/api/health")
 async def health_check():
